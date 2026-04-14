@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JD Intelligence — Wiseskulls IT Recruitment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --ink:#0f0f0e;--ink2:#3d3d3a;--ink3:#7a7a75;
+  --paper:#faf9f6;--surface:#f2f1ed;--card:#ffffff;
+  --border:#e2dfd8;--border2:#ccc9c0;
+  --req:#1557a0;--req-bg:#ddeaf8;
+  --pref:#8a500a;--pref-bg:#faebd3;
+  --mkt:#0b6644;--mkt-bg:#d3f0e2;
+  --combo:#3d2a82;--combo-bg:#ebe5fc;
+  --red:#b91c1c;--red-bg:#fef2f2;--red-border:#fecaca;
+  --radius:12px;--radius-sm:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+
+/* header */
+header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--border);padding:0 2rem;height:58px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.02em;color:var(--ink)}
+.logo span{color:var(--ink3);font-weight:500}
+.hbadge{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:5px}
+.dot-live{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* layout */
+main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+
+/* hero */
+.hero{margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.hero-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:.75rem}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(24px,4.5vw,36px);font-weight:800;line-height:1.15;letter-spacing:-.02em;color:var(--ink);margin-bottom:.75rem}
+.hero h1 em{font-style:normal;color:var(--ink3)}
+.hero p{font-size:14px;color:var(--ink3);line-height:1.75;max-width:540px}
+.how-it-works{display:flex;gap:1.5rem;margin-top:1.25rem;flex-wrap:wrap}
+.how-step{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink3);font-family:'DM Mono',monospace}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--ink2);flex-shrink:0;font-weight:500}
+
+/* input */
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:2rem;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.input-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:.5rem}
+textarea{width:100%;min-height:150px;resize:vertical;font-family:'DM Mono',monospace;font-size:12px;line-height:1.75;padding:12px 14px;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color .15s,background .15s}
+textarea:focus{border-color:var(--border2);background:#fff}
+textarea::placeholder{color:var(--ink3);opacity:.6}
+.btn-row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btn-go{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;padding:11px 26px;background:var(--ink);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:opacity .15s;display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+.btn-go:hover{opacity:.78}
+.btn-go:disabled{opacity:.35;cursor:not-allowed}
+.btn-go svg{flex-shrink:0}
+.btn-clr{font-size:13px;padding:10px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;font-family:'Inter',sans-serif}
+.btn-clr:hover{background:var(--surface)}
+.st{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3)}
+
+/* loader */
+#loader{display:none;padding:3.5rem 0;text-align:center}
+.spin{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--ink2);border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lmsg{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink3)}
+
+/* result */
+#result{display:none}
+
+/* role strip */
+.role-strip{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:start}
+.role-ico{width:44px;height:44px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.role-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.role-pill{font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--ink3);background:var(--surface)}
+.role-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.02em;margin-bottom:4px}
+.role-summary{font-size:13px;color:var(--ink2);line-height:1.7}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.li{display:flex;align-items:center;gap:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--ink2)}
+.ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+/* venn */
+.venn-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1rem .75rem;margin-bottom:1.5rem}
+#vennSvg{width:100%;height:auto;display:block;overflow:visible}
+
+/* checklist */
+.checklist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem}
+.sec-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:.75rem;display:flex;align-items:center;gap:7px}
+.sec-label.danger{color:var(--red)}
+.sec-label::before{content:'';width:12px;height:2px;background:currentColor;border-radius:1px}
+.clist{display:flex;flex-direction:column;gap:6px}
+.ci{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--ink2);line-height:1.55}
+.ci::before{content:'□';font-size:14px;color:var(--ink3);flex-shrink:0;margin-top:1px}
+
+/* notes grid */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:1.5rem}
+.note{background:var(--red-bg);border:1px solid var(--red-border);border-left:3px solid var(--red);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 14px}
+.note-t{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:5px}
+.note-b{font-size:12.5px;color:var(--ink);line-height:1.65}
+
+/* market */
+.market{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+.market-body{font-size:13.5px;color:var(--ink2);line-height:1.8}
+
+/* error */
+.err{background:var(--red-bg);border:1px solid var(--red-border);border-radius:var(--radius);padding:1rem 1.25rem;font-family:'DM Mono',monospace;font-size:12px;color:var(--red);margin-top:1rem;display:none}
+
+/* footer */
+footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);letter-spacing:.02em}
+
+@media(max-width:600px){
+  header{padding:0 1rem}
+  main{padding:1.5rem 1rem 3rem}
+  .how-it-works{gap:1rem}
+  .notes-grid{grid-template-columns:1fr}
+  .role-strip{grid-template-columns:1fr}
+  .role-ico{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">JD Intelligence <span>/ Wiseskulls</span></div>
+  <div class="hbadge"><div class="dot-live"></div>Gemini AI · Free</div>
+</header>
+
+<main>
+
+  <div class="hero">
+    <div class="hero-tag">US IT Recruitment Tool</div>
+    <h1>Decode any JD into a<br/><em>clear skill map</em></h1>
+    <p>Paste a job description — get a visual Venn diagram of required, preferred, and market-relevant skills. With recruiter notes, screening checklist, and live US market context.</p>
+    <div class="how-it-works">
+      <div class="how-step"><div class="step-n">1</div>Paste full JD</div>
+      <div class="how-step"><div class="step-n">2</div>AI analyzes skills</div>
+      <div class="how-step"><div class="step-n">3</div>Read the Venn map</div>
+      <div class="how-step"><div class="step-n">4</div>Use notes to screen</div>
+    </div>
+  </div>
+
+  <div class="input-card">
+    <div class="input-label">Paste job description</div>
+    <textarea id="jdInput" placeholder="Paste the full JD here — title, location, required skills, preferred skills, responsibilities, years of experience, implementation partner details..."></textarea>
+    <div class="btn-row">
+      <button class="btn-go" id="goBtn" onclick="analyze()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5v4" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Analyze JD
+      </button>
+      <button class="btn-clr" onclick="clearAll()">Clear</button>
+      <span class="st" id="stMsg"></span>
+    </div>
+  </div>
+
+  <div id="loader">
+    <div class="spin"></div>
+    <div class="lmsg" id="lmsg">Reading job description...</div>
+  </div>
+
+  <div id="result">
+
+    <div class="role-strip">
+      <div class="role-ico">⚙</div>
+      <div>
+        <div class="role-meta">
+          <span class="role-pill" id="rLoc">—</span>
+          <span class="role-pill" id="rDur">—</span>
+        </div>
+        <div class="role-title" id="rTitle">—</div>
+        <div class="role-summary" id="rSummary"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="li"><div class="ld" style="background:var(--req)"></div>Required only</div>
+      <div class="li"><div class="ld" style="background:var(--pref)"></div>Preferred only</div>
+      <div class="li"><div class="ld" style="background:var(--mkt)"></div>Market relevant</div>
+      <div class="li"><div class="ld" style="background:#2c5282"></div>Req + Pref overlap</div>
+      <div class="li"><div class="ld" style="background:#276749"></div>Req + Market overlap</div>
+      <div class="li"><div class="ld" style="background:#744210"></div>Pref + Market overlap</div>
+      <div class="li"><div class="ld" style="background:var(--combo)"></div>Golden combo (all 3)</div>
+    </div>
+
+    <div class="venn-card">
+      <div id="vennWrap"></div>
+    </div>
+
+    <div class="checklist-card">
+      <div class="sec-label">First-call screening checklist</div>
+      <div class="clist" id="clist"></div>
+    </div>
+
+    <div class="sec-label danger" style="margin-bottom:.75rem">Key notes &amp; market signals</div>
+    <div class="notes-grid" id="notesGrid"></div>
+
+    <div class="market">
+      <div class="sec-label" style="margin-bottom:.75rem">US market context</div>
+      <div class="market-body" id="mktBody"></div>
+    </div>
+
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+</main>
+
+<footer>Wiseskulls Recruitment Intelligence &nbsp;·&nbsp; Powered by Google Gemini AI (free) &nbsp;·&nbsp; Built for US IT Recruitment</footer>
+
+<script>
+const MSGS = [
+  'Reading job description...','Identifying skill categories...','Checking US market trends...','Mapping skill relationships...','Building your report...'
+];
+let mi;
+function cycleMsg(){
+  let i=0; const el=document.getElementById('lmsg'); el.textContent=MSGS[0];
+  mi=setInterval(()=>{ i=(i+1)%MSGS.length; el.textContent=MSGS[i]; },2200);
+}
+
+function clearAll(){
+  document.getElementById('jdInput').value='';
+  document.getElementById('result').style.display='none';
+  document.getElementById('errBox').style.display='none';
+  document.getElementById('stMsg').textContent='';
+}
+
+async function analyze(){
+  const jd=document.getElementById('jdInput').value.trim();
+  if(!jd){document.getElementById('stMsg').textContent='Paste a JD first.';return;}
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;
+  document.getElementById('result').style.display='none';
+  document.getElementById('errBox').style.display='none';
+  document.getElementById('loader').style.display='block';
+  document.getElementById('stMsg').textContent='';
+  cycleMsg();
+
+  try{
+    const res=await fetch('/.netlify/functions/analyze',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({jd})
+    });
+    const text=await res.text();
+    let parsed;
+    try{ parsed=JSON.parse(text); }
+    catch{ const m=text.match(/\{[\s\S]*\}/); if(!m)throw new Error('Unexpected response from AI. Please try again.'); parsed=JSON.parse(m[0]); }
+    if(!res.ok) throw new Error(parsed.error||'Server error');
+    clearInterval(mi);
+    document.getElementById('loader').style.display='none';
+    render(parsed);
+  }catch(e){
+    clearInterval(mi);
+    document.getElementById('loader').style.display='none';
+    const eb=document.getElementById('errBox');
+    eb.textContent='Error: '+e.message;
+    eb.style.display='block';
+  }finally{ btn.disabled=false; }
+}
+
+function render(d){
+  document.getElementById('rTitle').textContent=d.jobTitle||'Analysis';
+  document.getElementById('rLoc').textContent=d.location||'Location TBD';
+  document.getElementById('rDur').textContent=d.duration||'Duration TBD';
+  document.getElementById('rSummary').textContent=d.summary||'';
+
+  buildVenn(d);
+
+  const cl=document.getElementById('clist'); cl.innerHTML='';
+  (d.screeningChecklist||[]).forEach(q=>{
+    const div=document.createElement('div'); div.className='ci'; div.textContent=q; cl.appendChild(div);
+  });
+
+  const ng=document.getElementById('notesGrid'); ng.innerHTML='';
+  (d.keyNotes||[]).forEach(n=>{
+    const c=document.createElement('div'); c.className='note';
+    c.innerHTML=`<div class="note-t">${n.title||''}</div><div class="note-b">${n.detail||''}</div>`;
+    ng.appendChild(c);
+  });
+
+  document.getElementById('mktBody').textContent=d.marketInsight||'';
+  document.getElementById('result').style.display='block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildVenn(d){
+  const NS='http://www.w3.org/2000/svg';
+  const W=720,H=540;
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('id','vennSvg');
+
+  // three circles
+  const circles=[
+    {cx:222,cy:198,r:162,fill:'#ddeaf8',stroke:'#1557a0',label:'REQUIRED',lx:70,ly:46},
+    {cx:498,cy:198,r:162,fill:'#faebd3',stroke:'#8a500a',label:'PREFERRED',lx:651,ly:46},
+    {cx:360,cy:370,r:162,fill:'#d3f0e2',stroke:'#0b6644',label:'MARKET RELEVANT',lx:360,ly:518}
+  ];
+  circles.forEach(c=>{
+    const el=document.createElementNS(NS,'circle');
+    el.setAttribute('cx',c.cx);el.setAttribute('cy',c.cy);el.setAttribute('r',c.r);
+    el.setAttribute('fill',c.fill);el.setAttribute('fill-opacity','.48');
+    el.setAttribute('stroke',c.stroke);el.setAttribute('stroke-width','1.5');
+    svg.appendChild(el);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',c.lx);t.setAttribute('y',c.ly);
+    t.setAttribute('fill',c.stroke);t.setAttribute('font-size','9');
+    t.setAttribute('font-family','DM Mono,monospace');t.setAttribute('text-anchor','middle');
+    t.setAttribute('letter-spacing','1.3');t.setAttribute('font-weight','600');
+    t.textContent=c.label;svg.appendChild(t);
+  });
+
+  // zone definitions [cx, cy, fill, stroke, skills_key]
+  const zones=[
+    {x:108,y:198,bg:'#ddeaf8',st:'#1557a0',skills:d.requiredOnly||[]},
+    {x:612,y:198,bg:'#faebd3',st:'#8a500a',skills:d.preferredOnly||[]},
+    {x:360,y:468,bg:'#d3f0e2',st:'#0b6644',skills:d.marketOnly||[]},
+    {x:360,y:96, bg:'#c3d8f0',st:'#2c5282',skills:d.reqAndPref||[]},
+    {x:204,y:342,bg:'#c2f0d8',st:'#276749',skills:d.reqAndMarket||[]},
+    {x:516,y:342,bg:'#fef3c0',st:'#744210',skills:d.prefAndMarket||[]},
+    {x:360,y:252,bg:'#ebe5fc',st:'#3d2a82',skills:d.allThree||[]}
+  ];
+
+  zones.forEach(z=>{
+    if(!z.skills.length)return;
+    const n=z.skills.length;
+    z.skills.forEach((sk,i)=>{
+      const py=z.y-(n-1)*12+i*24;
+      const tw=Math.min(sk.length*6.8+22,128);
+      const g=document.createElementNS(NS,'g');
+      const rc=document.createElementNS(NS,'rect');
+      rc.setAttribute('x',z.x-tw/2);rc.setAttribute('y',py-10);
+      rc.setAttribute('width',tw);rc.setAttribute('height',20);rc.setAttribute('rx','10');
+      rc.setAttribute('fill',z.bg);rc.setAttribute('stroke',z.st);rc.setAttribute('stroke-width','.9');
+      const tx=document.createElementNS(NS,'text');
+      tx.setAttribute('x',z.x);tx.setAttribute('y',py+5);
+      tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','9.5');
+      tx.setAttribute('font-family','DM Mono,monospace');
+      tx.setAttribute('fill',z.st);tx.setAttribute('font-weight','500');
+      tx.textContent=sk;
+      g.appendChild(rc);g.appendChild(tx);svg.appendChild(g);
+    });
+  });
+
+  document.getElementById('vennWrap').innerHTML='';
+  document.getElementById('vennWrap').appendChild(svg);
+}
+</script>
+</body>
+</html>
