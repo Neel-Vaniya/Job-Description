@@ -134,17 +134,44 @@ ${jd}
         .trim();
 
       try {
-        const parsed = JSON.parse(raw);
+  const parsed = JSON.parse(raw);
 
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify(parsed),
-        };
-      } catch (err) {
-        console.log("❌ JSON parse failed:", raw);
-        continue;
-      }
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify(parsed),
+  };
+
+} catch (err) {
+  console.log("❌ JSON parse failed:", raw);
+
+  // ✅ FALLBACK RESPONSE (prevents frontend crash)
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      jobTitle: "Analysis Failed",
+      location: "N/A",
+      duration: "N/A",
+      summary: "AI returned an invalid format. Please try again.",
+      requiredOnly: [],
+      preferredOnly: [],
+      marketOnly: [],
+      reqAndPref: [],
+      reqAndMarket: [],
+      prefAndMarket: [],
+      allThree: [],
+      keyNotes: [
+        {
+          title: "Parsing Error",
+          detail: "Gemini returned invalid JSON format.",
+        },
+      ],
+      marketInsight: "Try again with a cleaner job description.",
+      screeningChecklist: [],
+    }),
+  };
+}
     } catch (e) {
       return {
         statusCode: 500,
