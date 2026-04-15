@@ -6,6 +6,7 @@ exports.handler = async function (event) {
     "Content-Type": "application/json",
   };
 
+  // Handle preflight
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
   }
@@ -25,47 +26,46 @@ exports.handler = async function (event) {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error:
-          "GEMINI_API_KEY missing. Add it in Netlify → Environment variables → then redeploy.",
+        error: "Missing GEMINI_API_KEY in Netlify environment variables",
       }),
     };
   }
 
-  let jd;
+  let jd = "";
+
   try {
-    ({ jd } = JSON.parse(event.body));
+    const body =
+      typeof event.body === "string"
+        ? JSON.parse(event.body)
+        : event.body;
+
+    jd = body.jd || "";
   } catch {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: "Invalid request body." }),
+      body: JSON.stringify({ error: "Invalid request body" }),
     };
   }
 
-  if (!jd || jd.trim().length < 40) {
+  if (!jd || jd.length < 30) {
     return {
       statusCode: 400,
       headers,
       body: JSON.stringify({
-        error: "JD too short. Paste full job description.",
+        error: "Please provide a valid job description",
       }),
     };
   }
 
   const prompt = `
-You are a senior US IT recruitment analyst.
-
-Return ONLY valid JSON.
-No markdown.
-No explanation.
-No backticks.
-No trailing commas.
+Return ONLY valid JSON. No explanation. No markdown. No extra text.
 
 {
-  "jobTitle": "exact role title",
-  "location": "location from JD or Remote",
-  "duration": "contract duration or Fulltime",
-  "summary": "2 sentences",
+  "jobTitle": "",
+  "location": "",
+  "duration": "",
+  "summary": "",
   "requiredOnly": [],
   "preferredOnly": [],
   "marketOnly": [],
@@ -73,10 +73,8 @@ No trailing commas.
   "reqAndMarket": [],
   "prefAndMarket": [],
   "allThree": [],
-  "keyNotes": [
-    {"title":"SHORT TITLE","detail":"insight"}
-  ],
-  "marketInsight": "2-3 sentences",
+  "keyNotes": [{"title":"","detail":""}],
+  "marketInsight": "",
   "screeningChecklist": []
 }
 
@@ -84,110 +82,87 @@ JD:
 ${jd}
 `;
 
-  const models = ["gemini-1.5-flash-latest"];
-
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
-
-      const resp = await fetch(url, {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 2048,
-          },
+          generationConfig: { temperature: 0.2 },
         }),
-      });
+      }
+    );
 
-      const data = await resp.json();
+    const data = await response.json();
 
-      if (!resp.ok) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error:
-              "Gemini API error: " +
-              (data?.error?.message || "Check API key"),
-          }),
+    let raw =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    console.log("RAW GEMINI:", raw);
+
+    // 🔥 CLEAN RESPONSE
+    raw = raw
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .replace(/^[^{]*/, "")
+      .replace(/[^}]*$/, "")
+      .trim();
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      try {
+        // 🛠 auto-fix common issues
+        const fixed = raw
+          .replace(/(\w+):/g, '"$1":')
+          .replace(/,\s*}/g, "}")
+          .replace(/,\s*]/g, "]");
+
+        parsed = JSON.parse(fixed);
+      } catch {
+        // ✅ FINAL SAFE FALLBACK
+        parsed = {
+          jobTitle: "Analysis Failed",
+          location: "N/A",
+          duration: "N/A",
+          summary:
+            "AI returned an invalid format. Please try again.",
+          requiredOnly: [],
+          preferredOnly: [],
+          marketOnly: [],
+          reqAndPref: [],
+          reqAndMarket: [],
+          prefAndMarket: [],
+          allThree: [],
+          keyNotes: [
+            {
+              title: "Error",
+              detail:
+                "Gemini response could not be parsed into JSON.",
+            },
+          ],
+          marketInsight: "",
+          screeningChecklist: [],
         };
       }
-
-      let raw =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      if (!raw) continue;
-
-      console.log("RAW GEMINI:", raw);
-
-      // 🔥 CLEAN EVERYTHING
-      raw = raw
-        .replace(/```json/gi, "")
-        .replace(/```/g, "")
-        .replace(/^[^{]*/, "")
-        .replace(/[^}]*$/, "")
-        .replace(/,\s*}/g, "}")
-        .replace(/,\s*]/g, "]")
-        .trim();
-
-      try {
-  const parsed = JSON.parse(raw);
-
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify(parsed),
-  };
-
-} catch (err) {
-  console.log("❌ JSON parse failed:", raw);
-
-  // ✅ FALLBACK RESPONSE (prevents frontend crash)
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({
-      jobTitle: "Analysis Failed",
-      location: "N/A",
-      duration: "N/A",
-      summary: "AI returned an invalid format. Please try again.",
-      requiredOnly: [],
-      preferredOnly: [],
-      marketOnly: [],
-      reqAndPref: [],
-      reqAndMarket: [],
-      prefAndMarket: [],
-      allThree: [],
-      keyNotes: [
-        {
-          title: "Parsing Error",
-          detail: "Gemini returned invalid JSON format.",
-        },
-      ],
-      marketInsight: "Try again with a cleaner job description.",
-      screeningChecklist: [],
-    }),
-  };
-}
-    } catch (e) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: "Server error: " + e.message,
-        }),
-      };
     }
-  }
 
-  return {
-    statusCode: 500,
-    headers,
-    body: JSON.stringify({
-      error: "AI response parsing failed. Try again.",
-    }),
-  };
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(parsed),
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: "Server error: " + err.message,
+      }),
+    };
+  }
 };
