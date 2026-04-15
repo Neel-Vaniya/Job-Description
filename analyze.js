@@ -6,101 +6,161 @@ exports.handler = async function (event) {
     "Content-Type": "application/json",
   };
 
-  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
-  if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: "" };
+  }
+
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
+  }
 
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
+
   if (!GEMINI_KEY) {
     return {
-      statusCode: 500, headers,
-      body: JSON.stringify({ error: "GEMINI_API_KEY missing. Go to Netlify → Site configuration → Environment variables → add GEMINI_API_KEY then redeploy." }),
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error:
+          "GEMINI_API_KEY missing. Add it in Netlify → Environment variables → then redeploy.",
+      }),
     };
   }
 
   let jd;
-  try { ({ jd } = JSON.parse(event.body)); }
-  catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid request body." }) }; }
+  try {
+    ({ jd } = JSON.parse(event.body));
+  } catch {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: "Invalid request body." }),
+    };
+  }
 
-  if (!jd || jd.trim().length < 40)
-    return { statusCode: 400, headers, body: JSON.stringify({ error: "JD too short. Paste the full job description." }) };
+  if (!jd || jd.trim().length < 40) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({
+        error: "JD too short. Paste full job description.",
+      }),
+    };
+  }
 
-  const prompt = `You are a senior US IT recruitment analyst. Analyze the job description below.
-Return ONLY a raw JSON object. No markdown. No backticks. No code fences. No explanation before or after. Start your response with { and end with }.
+  const prompt = `
+You are a senior US IT recruitment analyst.
+
+Return ONLY valid JSON.
+No markdown.
+No explanation.
+No backticks.
+No trailing commas.
 
 {
   "jobTitle": "exact role title",
   "location": "location from JD or Remote",
   "duration": "contract duration or Fulltime",
-  "summary": "2 sentences: what client needs AND recruiter sourcing challenge",
-  "requiredOnly": ["max 5 skills from required section only, max 3 words each"],
-  "preferredOnly": ["max 5 skills from preferred section only, max 3 words each"],
-  "marketOnly": ["max 3 skills NOT in JD but expected in US market for this role"],
-  "reqAndPref": ["max 3 skills bridging both required and preferred"],
-  "reqAndMarket": ["max 2 required skills that pair strongly with market demand"],
-  "prefAndMarket": ["max 2 preferred skills trending in US market for this role"],
-  "allThree": ["1-2 golden skills non-negotiable across all three categories"],
+  "summary": "2 sentences",
+  "requiredOnly": [],
+  "preferredOnly": [],
+  "marketOnly": [],
+  "reqAndPref": [],
+  "reqAndMarket": [],
+  "prefAndMarket": [],
+  "allThree": [],
   "keyNotes": [
-    {"title":"SHORT TITLE","detail":"recruiter-actionable insight, ATS tips, red flags, screening shortcuts"},
-    {"title":"SHORT TITLE","detail":"..."},
-    {"title":"SHORT TITLE","detail":"..."},
-    {"title":"SHORT TITLE","detail":"..."},
-    {"title":"SHORT TITLE","detail":"..."}
+    {"title":"SHORT TITLE","detail":"insight"}
   ],
-  "marketInsight": "2-3 sentences: US demand, C2C/W2 rate range, candidate pool reality",
-  "screeningChecklist": ["First call yes/no question 1?","Question 2?","Question 3?","Question 4?","Question 5?"]
+  "marketInsight": "2-3 sentences",
+  "screeningChecklist": []
 }
 
-JD to analyze:
-${jd}`;
+JD:
+${jd}
+`;
 
-  const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.0-pro"];
+  const models = ["gemini-1.5-flash-latest"];
 
   for (const model of models) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+
       const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 2048,
+          },
         }),
       });
 
       const data = await resp.json();
 
       if (!resp.ok) {
-        if (model === models[models.length - 1]) {
-          return { statusCode: 500, headers, body: JSON.stringify({ error: "Gemini API error: " + (data?.error?.message || "Check your API key.") }) };
-        }
-        continue;
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error:
+              "Gemini API error: " +
+              (data?.error?.message || "Check API key"),
+          }),
+        };
       }
 
-      let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      let raw =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
       if (!raw) continue;
 
-      // Strip markdown fences Gemini sometimes adds
-      raw = raw.trim()
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/\s*```$/i, "")
+      console.log("RAW GEMINI:", raw);
+
+      // 🔥 CLEAN EVERYTHING
+      raw = raw
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .replace(/^[^{]*/, "")
+        .replace(/[^}]*$/, "")
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]")
         .trim();
 
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) continue;
-
       try {
-        JSON.parse(match[0]); // validate
-        return { statusCode: 200, headers, body: match[0] };
-      } catch {
+        const parsed = JSON.parse(raw);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(parsed),
+        };
+      } catch (err) {
+        console.log("❌ JSON parse failed:", raw);
         continue;
       }
     } catch (e) {
-      if (model === models[models.length - 1]) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error: " + e.message }) };
-      }
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: "Server error: " + e.message,
+        }),
+      };
     }
   }
 
-  return { statusCode: 500, headers, body: JSON.stringify({ error: "All models failed. Please check your GEMINI_API_KEY in Netlify environment variables." }) };
+  return {
+    statusCode: 500,
+    headers,
+    body: JSON.stringify({
+      error: "AI response parsing failed. Try again.",
+    }),
+  };
 };
